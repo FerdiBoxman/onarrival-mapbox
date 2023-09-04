@@ -21,6 +21,17 @@ if (typeof window !== 'undefined') {
   };
 }
 
+console.log('Shims.js is running');
+
+if (typeof global === 'undefined') {
+  window.global = window;
+}
+
+global.process = global.process || {
+  cwd: () => '/', // Mock implementation for process.cwd()
+  env: global.process.env || {},
+};
+
 if (typeof global === 'undefined') {
   window.global = window;
 }
