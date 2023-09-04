@@ -22,11 +22,13 @@ const context = await esbuild.context({
   minify: PRODUCTION,
   sourcemap: !PRODUCTION,
   target: PRODUCTION ? 'es2019' : 'esnext',
-  platform: 'node',
+  platform: 'browser',
   inject: LIVE_RELOAD ? ['./bin/live-reload.js'] : undefined,
   define: {
     SERVE_ORIGIN: JSON.stringify(SERVE_ORIGIN),
   },
+
+  external: ['path', 'os', 'crypto'],
 });
 
 // Build files in prod
