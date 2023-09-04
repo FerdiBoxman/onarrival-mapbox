@@ -24,11 +24,14 @@ if (typeof window !== 'undefined') {
 
 console.log('Shims.js is running');
 
+// Shim for the global object
 if (typeof global === 'undefined') {
   window.global = window;
 }
 
 // Empty shims for Node.js built-ins to avoid esbuild warnings
-global.process = global.process || {};
+global.process = global.process || {
+  cwd: () => '/', // Stub for process.cwd
+};
 global.Buffer = global.Buffer || {};
 global.process.env = global.process.env || {};
