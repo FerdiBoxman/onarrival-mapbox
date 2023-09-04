@@ -12,10 +12,13 @@ if (typeof process !== 'undefined' && process.versions && process.versions.node)
 }
 
 // Importing dotenv
-import * as dotenv from 'dotenv';
 
 // Initialize dotenv
-dotenv.config({ path: './src/.env' }); // Specify the correct path
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '../.env' }); // Correct the path to go up one directory to the root
+
+// Debug: Print to console to verify
+console.log('API Key from .env:', process.env.API_KEY_MAPBOX);
 
 // Read the API key from environment variables
 const apiKeyMapbox = process.env.API_KEY_MAPBOX;
