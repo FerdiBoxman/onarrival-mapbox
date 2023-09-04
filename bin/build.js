@@ -6,16 +6,19 @@ import { join, sep } from 'path';
 const PRODUCTION = process.env.NODE_ENV === 'production';
 const BUILD_DIRECTORY = 'dist';
 
-const ENTRY_POINTS = ['./src/index-v1.4.ts']; // Same entry point for both Node.js and Browser
+const ENTRY_POINTS = ['./src/index-v1.5.ts']; // Same entry point for both Node.js and Browser
 
 // Build for Node.js
 esbuild
   .build({
     entryPoints: ENTRY_POINTS,
     bundle: true,
-    outfile: './dist/index-v1.4.js',
+    outfile: './dist/index-v1.5.js',
     platform: 'browser',
-    external: ['path', 'os', 'crypto'],
+    external: ['path', 'os', 'crypto'], // Keep these as external dependencies
+    alias: {
+      path: 'path-browserify', // Use path-browserify in the browser
+    },
     minify: PRODUCTION,
   })
   .catch(() => process.exit(1));
