@@ -22,6 +22,7 @@ const context = await esbuild.context({
   minify: PRODUCTION,
   sourcemap: !PRODUCTION,
   target: PRODUCTION ? 'es2019' : 'esnext',
+  platform: 'node',
   inject: LIVE_RELOAD ? ['./bin/live-reload.js'] : undefined,
   define: {
     SERVE_ORIGIN: JSON.stringify(SERVE_ORIGIN),
