@@ -1,4 +1,6 @@
-require('dotenv').config();
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 const apiKeyMapbox = process.env.API_KEY_MAPBOX;
 
 mapboxgl.accessToken = apiKeyMapbox;
