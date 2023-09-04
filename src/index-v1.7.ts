@@ -1,3 +1,19 @@
+// Conditional import/require for Node.js built-in modules
+let path, os, crypto;
+
+// Check if the environment is Node.js
+if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+  path = require('path');
+  os = require('os');
+  crypto = require('crypto');
+} else {
+  // For browser: either implement browser-compatible functionality or leave them undefined.
+  // For example, for path you can use simple string manipulations, or a browser-compatible library.
+  // Leave os and crypto undefined or replace with browser-compatible alternatives.
+}
+
+// Your remaining code follows here.
+
 import * as dotenv from 'dotenv';
 
 dotenv.config();
