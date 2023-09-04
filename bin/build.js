@@ -7,7 +7,7 @@ const BUILD_DIRECTORY = 'dist';
 const PRODUCTION = process.env.NODE_ENV === 'production';
 
 // Config entrypoint files
-const ENTRY_POINTS = ['src/index-v1.0.ts'];
+const ENTRY_POINTS = ['src/index-v1.1.ts'];
 
 // Config dev serving
 const LIVE_RELOAD = !PRODUCTION;
@@ -27,7 +27,9 @@ const context = await esbuild.context({
   define: {
     SERVE_ORIGIN: JSON.stringify(SERVE_ORIGIN),
   },
-
+  alias: {
+    path: 'path-browserify',
+  },
   external: ['path', 'os', 'crypto'],
 });
 

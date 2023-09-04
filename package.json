@@ -53,7 +53,8 @@
   },
   "dependencies": {
     "@finsweet/ts-utils": "^0.39.2",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "path-browserify": "^1.0.1"
   },
   "engines": {
     "pnpm": ">=8"
