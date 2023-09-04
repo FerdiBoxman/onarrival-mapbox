@@ -27,14 +27,23 @@ if (typeof global === 'undefined') {
   window.global = window;
 }
 
-global.process = global.process || {
-  cwd: () => '/', // Mock implementation for process.cwd()
-  env: global.process.env || {},
-};
+// Initialize global.process if it's undefined
+if (typeof global.process === 'undefined') {
+  global.process = {};
+}
+
+// Initialize global.process.env if it's undefined
+if (typeof global.process.env === 'undefined') {
+  global.process.env = {};
+}
+
+// Add mock for process.cwd()
+global.process.cwd = global.process.cwd || (() => '/');
 
 if (typeof global === 'undefined') {
   window.global = window;
 }
+
 global.process = global.process || {};
 global.process.env = global.process.env || {};
 global.Buffer = global.Buffer || {};

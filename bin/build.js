@@ -6,14 +6,14 @@ import { join, sep } from 'path';
 const PRODUCTION = process.env.NODE_ENV === 'production';
 const BUILD_DIRECTORY = 'dist';
 
-const ENTRY_POINTS = ['./src/index-v2.6.ts']; // Same entry point for both Node.js and Browser
+const ENTRY_POINTS = ['./src/index-v2.7.ts']; // Same entry point for both Node.js and Browser
 
 // Build for Node.js
 esbuild
   .build({
     entryPoints: ENTRY_POINTS,
     bundle: true,
-    outfile: './dist/index-v2.6.js',
+    outfile: './dist/index-v2.7.js',
     platform: 'browser',
     external: ['path', 'os', 'crypto'],
     inject: ['./shims.js'],
