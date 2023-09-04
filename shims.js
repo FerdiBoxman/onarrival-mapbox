@@ -1,37 +1,29 @@
 // shims.js
 
-// Inside shims.js
 if (typeof window !== 'undefined') {
   window.require = function (module) {
     switch (module) {
       case 'path':
         return {
-          // Your implementation here
+          resolve: function () {
+            // Provide an alternative implementation or just return an empty string
+            return '';
+          },
+          // Add more methods from the 'path' module if needed
         };
       case 'os':
-        return {
-          // Your implementation here
-        };
+        return {};
       case 'crypto':
-        return {
-          // Your implementation here
-        };
+        return {};
       default:
         throw new Error(`Dynamic require of "${module}" is not supported`);
     }
   };
 }
 
-console.log('Shims.js is running');
-
-// Shim for the global object
 if (typeof global === 'undefined') {
   window.global = window;
 }
-
-// Empty shims for Node.js built-ins to avoid esbuild warnings
-global.process = global.process || {
-  cwd: () => '/', // Stub for process.cwd
-};
-global.Buffer = global.Buffer || {};
+global.process = global.process || {};
 global.process.env = global.process.env || {};
+global.Buffer = global.Buffer || {};
