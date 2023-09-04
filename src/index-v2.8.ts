@@ -1,25 +1,34 @@
 // Conditional import/require for Node.js built-in modules
 let path, os, crypto;
 
-// Check if the environment is Node.js
 if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+  // Node.js environment
   path = require('path');
   os = require('os');
   crypto = require('crypto');
 } else {
-  // For browser: either implement browser-compatible functionality or leave them undefined.
-  // For example, for path you can use simple string manipulations, or a browser-compatible library.
-  // Leave os and crypto undefined or replace with browser-compatible alternatives.
+  // Browser environment
+  // Implement browser-compatible functionality or leave them undefined
 }
 
-// Your remaining code follows here.
-
+// Importing dotenv
 import * as dotenv from 'dotenv';
 
+// Initialize dotenv
 dotenv.config();
+
+// Read the API key from environment variables
 const apiKeyMapbox = process.env.API_KEY_MAPBOX;
 
-mapboxgl.accessToken = apiKeyMapbox;
+// Debug: Print the value to the console to verify
+console.log('API Key from .env:', apiKeyMapbox);
+
+// Set the access token for Mapbox
+if (apiKeyMapbox) {
+  mapboxgl.accessToken = apiKeyMapbox;
+} else {
+  console.error('API Key for Mapbox is not set');
+}
 
 document.querySelector("[activity-data='image']").removeAttribute('srcset');
 document.querySelector("[activity-data='liked']").removeAttribute('srcset');
