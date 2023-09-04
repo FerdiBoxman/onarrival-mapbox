@@ -13,25 +13,8 @@ if (typeof process !== 'undefined' && process.versions && process.versions.node)
 
 // Importing dotenv
 
-// Initialize dotenv
-import * as dotenv from 'dotenv';
-dotenv.config({ path: '../.env' }); // Correct the path to go up one directory to the root
-
-// Debug: Print to console to verify
-console.log('API Key from .env:', process.env.API_KEY_MAPBOX);
-
-// Read the API key from environment variables
-const apiKeyMapbox = process.env.API_KEY_MAPBOX;
-
-// Debug: Print the value to the console to verify
-console.log('API Key from .env:', apiKeyMapbox);
-
-// Set the access token for Mapbox
-if (apiKeyMapbox) {
-  mapboxgl.accessToken = apiKeyMapbox;
-} else {
-  console.error('API Key for Mapbox is not set');
-}
+mapboxgl.accessToken =
+  'pk.eyJ1Ijoiam9yZGFub25hcnJpdmFsIiwiYSI6ImNsbHY4bW0zaTFxZ3czZ256bjlqODZmNncifQ.1xHX4Xvmvz9KNYmrZdFybA';
 
 document.querySelector("[activity-data='image']").removeAttribute('srcset');
 document.querySelector("[activity-data='liked']").removeAttribute('srcset');
