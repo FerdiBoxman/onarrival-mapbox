@@ -15,7 +15,7 @@ if (typeof process !== 'undefined' && process.versions && process.versions.node)
 import * as dotenv from 'dotenv';
 
 // Initialize dotenv
-dotenv.config({ path: './scripts/.env' }); // Specify the correct path
+dotenv.config({ path: './src/.env' }); // Specify the correct path
 
 // Read the API key from environment variables
 const apiKeyMapbox = process.env.API_KEY_MAPBOX;
