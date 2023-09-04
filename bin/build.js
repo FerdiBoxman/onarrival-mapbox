@@ -2,63 +2,25 @@ import * as esbuild from 'esbuild';
 import { readdirSync } from 'fs';
 import { join, sep } from 'path';
 
-// Config output
-const BUILD_DIRECTORY = 'dist';
+// Define constants
 const PRODUCTION = process.env.NODE_ENV === 'production';
+const BUILD_DIRECTORY = 'dist';
 
-// Config entrypoint files
-const ENTRY_POINTS = ['src/index-v1.1.ts'];
+const ENTRY_POINTS = ['./src/index-v1.2.ts']; // Same entry point for both Node.js and Browser
 
-// Config dev serving
-const LIVE_RELOAD = !PRODUCTION;
-const SERVE_PORT = 3000;
-const SERVE_ORIGIN = `http://localhost:${SERVE_PORT}`;
+// Build for Node.js
+esbuild
+  .build({
+    entryPoints: ENTRY_POINTS,
+    bundle: true,
+    outfile: './dist/index-v1.2.js',
+    platform: 'node',
+    minify: PRODUCTION,
+  })
+  .catch(() => process.exit(1));
 
-// Create context
-const context = await esbuild.context({
-  bundle: true,
-  entryPoints: ENTRY_POINTS,
-  outdir: BUILD_DIRECTORY,
-  minify: PRODUCTION,
-  sourcemap: !PRODUCTION,
-  target: PRODUCTION ? 'es2019' : 'esnext',
-  platform: 'browser',
-  inject: LIVE_RELOAD ? ['./bin/live-reload.js'] : undefined,
-  define: {
-    SERVE_ORIGIN: JSON.stringify(SERVE_ORIGIN),
-  },
-  alias: {
-    path: 'path-browserify',
-  },
-  external: ['path', 'os', 'crypto'],
-});
-
-// Build files in prod
-if (PRODUCTION) {
-  await context.rebuild();
-  context.dispose();
-}
-
-// Watch and serve files in dev
-else {
-  await context.watch();
-  await context
-    .serve({
-      servedir: BUILD_DIRECTORY,
-      port: SERVE_PORT,
-    })
-    .then(logServedFiles);
-}
-
-/**
- * Logs information about the files that are being served during local development.
- */
+// Log served files function
 function logServedFiles() {
-  /**
-   * Recursively gets all files in a directory.
-   * @param {string} dirPath
-   * @returns {string[]} An array of file paths.
-   */
   const getFiles = (dirPath) => {
     const files = readdirSync(dirPath, { withFileTypes: true }).map((dirent) => {
       const path = join(dirPath, dirent.name);
@@ -76,6 +38,7 @@ function logServedFiles() {
 
       // Normalize path and create file location
       const paths = file.split(sep);
+      const SERVE_ORIGIN = `http://localhost:3000`; // Set your own port
       paths[0] = SERVE_ORIGIN;
 
       const location = paths.join('/');
@@ -91,7 +54,8 @@ function logServedFiles() {
       };
     })
     .filter(Boolean);
-
-  // eslint-disable-next-line no-console
   console.table(filesInfo);
 }
+
+// Further logic can be added here, like calling logServedFiles
+// based on the environment (production or development).
