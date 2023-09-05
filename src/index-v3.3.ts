@@ -13,19 +13,50 @@ if (typeof process !== 'undefined' && process.versions && process.versions.node)
 
 // Importing dotenv
 
-mapboxgl.accessToken =
-  'pk.eyJ1Ijoiam9yZGFub25hcnJpdmFsIiwiYSI6ImNsbHY4bW0zaTFxZ3czZ256bjlqODZmNncifQ.1xHX4Xvmvz9KNYmrZdFybA';
-
 document.querySelector("[activity-data='image']").removeAttribute('srcset');
 document.querySelector("[activity-data='liked']").removeAttribute('srcset');
 
-// Function to find activity by ID in the data store
-function findActivityByIdInDataStore(dataStore, relatedActivityId) {
+const favoritesState = {}; // Object to track the favorite state for each parentPlaceId
+console.log('Initial favoritesState:', JSON.stringify(favoritesState));
+
+const isManuallyChanged = {}; // Object to track if the favorite state was manually changed
+console.log('Initial isManuallyChanged:', JSON.stringify(isManuallyChanged));
+
+const isInitiallyLoaded = false; // This flag will be outside the scope
+
+function updateActivityUI(activity) {
+  // Check if 'activity' is what you expect it to be. You can remove this line after debugging.
+  console.log('Activity: ', activity);
+
+  // Query for the div with the correct 'activity-data-place-id'
+  const favoriteElementDiv = document.querySelector(`[activity-data-place-id='${activity.id}']`);
+
+  if (favoriteElementDiv) {
+    // Query for the child img tag within this div
+    const favoriteElementImg = favoriteElementDiv.querySelector('img');
+    if (favoriteElementImg) {
+      if (activity.isFavorited) {
+        favoriteElementImg.src =
+          'https://uploads-ssl.webflow.com/642d2be9a355e8eae598cfe4/646356c55116c668dfccf4ae_heart-filled.svg';
+      } else {
+        favoriteElementImg.src =
+          'https://uploads-ssl.webflow.com/642d2be9a355e8eae598cfe4/643568f2cf264582be96a5ce_heart.svg';
+      }
+    } else {
+      console.log('Child img element not found');
+    }
+  } else {
+    console.log('Favorite element div not found');
+  }
+}
+
+function findActivityByIdInDataStore2(dataStore, relatedActivityId) {
   for (const guide of dataStore._guide_of_trips) {
     for (const activity of guide._guide_recommendations) {
-      if (activity.id === relatedActivityId) {
+      if (String(activity.place_id) === relatedActivityId) {
         return activity;
       }
+      console.error(`Activity with ID ${relatedActivityId} not found.`);
     }
   }
   return null;
@@ -53,21 +84,14 @@ async function renderRelatedActivities(activityId, destinationId, dataStore) {
 
   console.log('Related Activities', relatedActivities);
 
-  // Step 3: Randomly pick 5 activities
-  const randomActivities = [];
-  while (randomActivities.length < 5 && relatedActivities.length > 0) {
-    const randomIndex = Math.floor(Math.random() * relatedActivities.length);
-    const randomActivity = relatedActivities.splice(randomIndex, 1)[0];
-    randomActivities.push(randomActivity);
-  }
+  // No need for Step 3, we're showing all activities
 
-  console.log('Randomactivities', randomActivities);
   // Step 4: Render these in HTML
   const relatedActivitiesContainer = document.querySelector("[activity-data='related-activity']");
 
   relatedActivitiesContainer.innerHTML = ''; // Clear the container before appending new elements
 
-  randomActivities.forEach((activity) => {
+  relatedActivities.forEach((activity) => {
     const activityElement = document.createElement('div');
     activityElement.className = 'mini-card_component is-related-activity';
     activityElement.setAttribute('related-activity-id', activity.place_id);
@@ -162,11 +186,19 @@ function updateMarkerFromUrl() {
   // Reset all markers to default appearance
   Object.values(markersMap).forEach((marker) => {
     marker.style.border = '2px solid grey';
+
+    // Get the original background image URL from some storage, or a default image URL
+    const originalImageUrl = marker.getAttribute('original-image-url') || 'default_image_url_here';
+    marker.style.backgroundImage = `url("${originalImageUrl}")`;
   });
 
   // If activity_id is found in URL, change corresponding marker's appearance
   if (activityId && markersMap[activityId]) {
-    markersMap[activityId].style.border = '2px solid purple';
+    markersMap[activityId].style.border = '2px solid #636BFF';
+    // Set the background to the active image
+    const activeImageUrl =
+      markersMap[activityId].getAttribute('active-image-url') || 'active_image_url_here';
+    markersMap[activityId].style.backgroundImage = `url("${activeImageUrl}")`;
   }
 }
 
@@ -193,6 +225,10 @@ async function showActivityModal(activityId, dataStore) {
   const foundObject = clickedActivity._place._favorite_of_user_of_place.find(
     (favorite) => favorite.place_id === clickedActivity.place_id
   );
+
+  document
+    .querySelector("[wized='activity_like_button']")
+    .setAttribute('activity-data-place-id', clickedActivity.place_id);
 
   // If a matching place_id is found in _favorite_of_user_of_place array
   if (foundObject) {
@@ -290,68 +326,96 @@ async function showActivityModal(activityId, dataStore) {
     ? clickedActivity._place.google_sunday_hours
     : 'Not added';
 
-  // Function or code block that initializes your modal
-  // For demo, I am using a function but this could be part of your modal initialization code
+  // Initialize states from localStorage or create new empty objects
+  const favoritesState = JSON.parse(localStorage.getItem('favoritesState')) || {};
+  const isManuallyChanged = JSON.parse(localStorage.getItem('isManuallyChanged')) || {};
 
-  // Check if place is favorite (You need to replace this logic based on your data)
-  const isFavorite = clickedActivity._place._favorite_of_user_of_place.some(
-    (f) => f.place_id === clickedActivity.place_id
-  );
+  console.log('Initial favoritesState:', JSON.stringify(favoritesState));
+  console.log('Initial isManuallyChanged:', JSON.stringify(isManuallyChanged));
 
-  // Initialize likedElement globally for use in click event listener
-  const likedElement = document.querySelector("[activity-data='liked']");
-
-  // Set initial 'likedElement' src based on favorite status
-  likedElement.src = isFavorite
-    ? 'https://uploads-ssl.webflow.com/642d2be9a355e8eae598cfe4/646356c55116c668dfccf4ae_heart-filled.svg'
-    : 'https://uploads-ssl.webflow.com/642d2be9a355e8eae598cfe4/643568f2cf264582be96a5ce_heart.svg';
-
-  const examples = document.querySelectorAll("[wized='activity_like_button']");
-
-  examples.forEach((element) => {
-    element.addEventListener('click', async function () {
-      console.log('activity_like_button clicked');
-
-      // Get the parent's activity-data-id attribute
-      const parentId = element.getAttribute('activity-data-id');
-      console.log('parent_id', parentId);
-
-      if (likedElement) {
-        const currentSrc = likedElement.getAttribute('src');
-        console.log('Current src: ', currentSrc); // Debugging
-
-        let wizedVarName;
-        let wizedVarValue;
-
-        if (
-          currentSrc ===
-          'https://uploads-ssl.webflow.com/642d2be9a355e8eae598cfe4/643568f2cf264582be96a5ce_heart.svg'
-        ) {
-          likedElement.setAttribute(
-            'src',
-            'https://uploads-ssl.webflow.com/642d2be9a355e8eae598cfe4/646356c55116c668dfccf4ae_heart-filled.svg'
-          );
-
-          wizedVarName = 'add_favorite';
-          wizedVarValue = clickedActivity.place_id; // Pass clickedActivity.place_id when adding favorite
-        } else {
-          likedElement.setAttribute(
-            'src',
-            'https://uploads-ssl.webflow.com/642d2be9a355e8eae598cfe4/643568f2cf264582be96a5ce_heart.svg'
-          );
-
-          wizedVarName = 'remove_favorite';
-          wizedVarValue = parentId;
-          console.log(wizedVarName, wizedVarValue); // Pass parentId when removing favorite
-        }
-
-        // Set wized variable
-        await Wized.data.setVariable(wizedVarName, wizedVarValue);
-      } else {
-        console.log('likedElement is null or undefined'); // Debugging
-      }
+  function initializeActivityButtons() {
+    // Clear existing event listeners
+    const oldElements = document.querySelectorAll('[wized="activity_like_button"]');
+    oldElements.forEach((element) => {
+      const clone = element.cloneNode(true);
+      element.parentNode.replaceChild(clone, element);
     });
-  });
+
+    // Attach new event listeners
+    document.querySelectorAll('[wized="activity_like_button"]').forEach((element) => {
+      const parentPlaceId = element.getAttribute('activity-data-place-id');
+
+      console.log(`Processing element with parentPlaceId: ${parentPlaceId}`);
+
+      // Check if the favorite state was manually changed
+      if (isManuallyChanged[parentPlaceId]) {
+        console.log(`State manually changed for parentPlaceId: ${parentPlaceId}`);
+      } else {
+        console.log(`State not manually changed for parentPlaceId: ${parentPlaceId}`);
+
+        // Update the favorite state based on the attribute 'activity-liked' from the element
+        favoritesState[parentPlaceId] = element.getAttribute('activity-liked') === 'true';
+      }
+
+      // Update the UI based on the current favorite state
+      updateUI(element, favoritesState[parentPlaceId]);
+
+      // Attach click event listener
+      element.addEventListener('click', function () {
+        console.log(`activity_like_button clicked for parentPlaceId: ${parentPlaceId}`);
+        console.log(`Current favorite state before toggle: ${favoritesState[parentPlaceId]}`);
+
+        // Toggle the favorite state
+        const isFavorite = !favoritesState[parentPlaceId];
+        console.log(`New favorite state after toggle: ${isFavorite}`);
+
+        // Update the state and set it as manually changed
+        favoritesState[parentPlaceId] = isFavorite;
+        isManuallyChanged[parentPlaceId] = true;
+
+        // Save updated states to localStorage
+        localStorage.setItem('favoritesState', JSON.stringify(favoritesState));
+        localStorage.setItem('isManuallyChanged', JSON.stringify(isManuallyChanged));
+
+        // Update UI
+        updateUI(element, isFavorite);
+
+        console.log(
+          `Updated favoritesState and isManuallyChanged for parentPlaceId ${parentPlaceId}`
+        );
+      });
+    });
+  }
+
+  function updateUI(element, isFavorite) {
+    const icon = element.querySelector('.floating-round-button_icon');
+    if (isFavorite) {
+      icon.src =
+        'https://uploads-ssl.webflow.com/642d2be9a355e8eae598cfe4/646356c55116c668dfccf4ae_heart-filled.svg';
+    } else {
+      icon.src =
+        'https://uploads-ssl.webflow.com/642d2be9a355e8eae598cfe4/643568f2cf264582be96a5ce_heart.svg';
+    }
+    console.log(`Updating UI icon for favorite: ${isFavorite}`);
+  }
+
+  // Call the function to initialize
+  initializeActivityButtons();
+
+  // You can call initializeActivityButtons() again whenever the marker is clicked.
+
+  //
+  //
+
+  ///
+
+  ////
+
+  ////
+
+  ////
+
+  ////
 
   const rating = Math.floor(clickedActivity._place.google_rating); // Floor the rating to the nearest integer
 
@@ -379,13 +443,18 @@ async function showActivityModal(activityId, dataStore) {
 // On load code
 
 window.onload = async () => {
+  mapboxgl.accessToken =
+    'pk.eyJ1Ijoiam9yZGFub25hcnJpdmFsIiwiYSI6ImNsbHY4bW0zaTFxZ3czZ256bjlqODZmNncifQ.1xHX4Xvmvz9KNYmrZdFybA';
+
   document.querySelector('[wized=activity_info_modal]').style.display = 'none';
 
   console.log('Window loaded');
 
   Wized.request.awaitAllPageLoad(async () => {
     Wized.request.await('Load Trip Page');
+
     const dataStore = await Wized.data.get('r.18.d');
+    //setTimeout(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const destinationId = urlParams.get('destination_id');
     const activityId = urlParams.get('activity_id');
@@ -508,7 +577,7 @@ window.onload = async () => {
     function flyToAndSetActive(place) {
       console.log('Fly to place', place);
 
-      const offsetInRem = 20;
+      const offsetInRem = 10;
       const offsetInPixels = offsetInRem * 16; // Convert rem to pixels, assuming 1 rem = 16px
 
       map.flyTo({
@@ -517,10 +586,14 @@ window.onload = async () => {
         offset: [offsetInPixels, 0], // Adding the offset here
       });
 
-      const newActiveMarker = document.querySelector(`[marker_activity_id="${place.place_id}"]`);
+      const newActiveMarker = document.querySelector(`[marker_activity_id="${place.id}"]`);
+
+      const imageUrlActive = place._place_category.category_icon_active.url;
 
       if (newActiveMarker) {
-        newActiveMarker.style.border = '2px solid purple';
+        newActiveMarker.style.border = '2px solid #636BFF';
+        newActiveMarker.style.backgroundImage = `url("${imageUrlActive}")`;
+
         activeMarker = newActiveMarker;
       }
     }
@@ -644,9 +717,13 @@ window.onload = async () => {
       if (!place) return null;
 
       const imageUrl = place._place_category.category_icon.url;
+      const imageUrlActive = place._place_category.category_icon_active.url;
       const markerHtml = document.createElement('div');
       markerHtml.style.backgroundImage = `url("${imageUrl}")`;
       //markerHtml.setAttribute("src", imageUrl);
+      markerHtml.setAttribute('original-image-url', imageUrl);
+      markerHtml.setAttribute('active-image-url', imageUrlActive);
+
       markerHtml.setAttribute('marker_activity_id', activity.place_id);
       markerHtml.style.backgroundRepeat = 'no-repeat';
       markerHtml.style.backgroundPosition = 'center';
@@ -858,4 +935,5 @@ window.onload = async () => {
       map.fitBounds(bounds, { padding: 60 });
     }
   });
+  //  }, 2000); // Waits for 2 seconds
 };
