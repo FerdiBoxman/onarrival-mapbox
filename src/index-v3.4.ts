@@ -244,7 +244,7 @@ async function showActivityModal(activityId, dataStore) {
 
   document.querySelector("[activity-data='title']").innerText = clickedActivity._place.google_name;
   document.querySelector("[activity-data='category_icon']").src =
-    clickedActivity._place._place_category.category_icon.url;
+    clickedActivity._place._place_category.category_icon_black.url;
 
   document.querySelector("[activity-data='address']").innerText =
     clickedActivity._place.google_address_string;
