@@ -186,7 +186,7 @@ function updateMarkerFromUrl() {
   // Reset all markers to default appearance
   Object.values(markersMap).forEach((marker) => {
     marker.style.border = '2px solid grey';
-
+    marker.style.zIndex = '100';
     // Get the original background image URL from some storage, or a default image URL
     const originalImageUrl = marker.getAttribute('original-image-url') || 'default_image_url_here';
     marker.style.backgroundImage = `url("${originalImageUrl}")`;
@@ -195,6 +195,7 @@ function updateMarkerFromUrl() {
   // If activity_id is found in URL, change corresponding marker's appearance
   if (activityId && markersMap[activityId]) {
     markersMap[activityId].style.border = '2px solid #636BFF';
+    markersMap[activityId].style.zIndex = '101';
     // Set the background to the active image
     const activeImageUrl =
       markersMap[activityId].getAttribute('active-image-url') || 'active_image_url_here';
@@ -721,6 +722,7 @@ window.onload = async () => {
       const markerHtml = document.createElement('div');
       markerHtml.style.backgroundImage = `url("${imageUrl}")`;
       //markerHtml.setAttribute("src", imageUrl);
+      markerHtml.style.zIndex = '100';
       markerHtml.setAttribute('original-image-url', imageUrl);
       markerHtml.setAttribute('active-image-url', imageUrlActive);
 
