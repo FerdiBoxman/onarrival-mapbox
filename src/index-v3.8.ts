@@ -13,6 +13,8 @@ if (typeof process !== 'undefined' && process.versions && process.versions.node)
 
 // Importing dotenv
 
+// Importing dotenv
+
 document.querySelector("[activity-data='image']").removeAttribute('srcset');
 document.querySelector("[activity-data='liked']").removeAttribute('srcset');
 
@@ -829,7 +831,7 @@ window.onload = async () => {
         console.log('Replaced State');
 
         console.log(`Marker clicked with activity ID: ${activity.place_id}`);
-
+        closeFlag = false;
         showActivityModal(activity.place_id, dataStore);
         updateMarkerFromUrl();
         flyToAndSetActive(place);
