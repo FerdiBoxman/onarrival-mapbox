@@ -831,14 +831,12 @@ window.onload = async () => {
         console.log(`Marker clicked with activity ID: ${activity.place_id}`);
 
         showActivityModal(activity.place_id, dataStore);
-
         updateMarkerFromUrl();
         flyToAndSetActive(place);
         renderRelatedActivities(activityId, destinationId, dataStore);
       }
 
       if (isTabletOrMobile()) {
-        markerHtml.removeEventListener('touchend', handleMarkerTouchEnd);
         markerHtml.addEventListener('touchend', handleMarkerTouchEnd);
       } else {
         markerHtml.addEventListener('mouseenter', () => {
