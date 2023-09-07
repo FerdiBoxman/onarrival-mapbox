@@ -16,6 +16,8 @@ if (typeof process !== 'undefined' && process.versions && process.versions.node)
 document.querySelector("[activity-data='image']").removeAttribute('srcset');
 document.querySelector("[activity-data='liked']").removeAttribute('srcset');
 
+let closeFlag = false;
+
 const favoritesState = {}; // Object to track the favorite state for each parentPlaceId
 console.log('Initial favoritesState:', JSON.stringify(favoritesState));
 
@@ -186,7 +188,8 @@ function updateMarkerFromUrl() {
   // Reset all markers to default appearance
   Object.values(markersMap).forEach((marker) => {
     marker.style.border = '2px solid grey';
-    marker.style.zIndex = '100';
+    marker.style.zIndex = '0';
+
     // Get the original background image URL from some storage, or a default image URL
     const originalImageUrl = marker.getAttribute('original-image-url') || 'default_image_url_here';
     marker.style.backgroundImage = `url("${originalImageUrl}")`;
@@ -195,7 +198,7 @@ function updateMarkerFromUrl() {
   // If activity_id is found in URL, change corresponding marker's appearance
   if (activityId && markersMap[activityId]) {
     markersMap[activityId].style.border = '2px solid #636BFF';
-    markersMap[activityId].style.zIndex = '101';
+    markersMap[activityId].style.zIndex = '1';
     // Set the background to the active image
     const activeImageUrl =
       markersMap[activityId].getAttribute('active-image-url') || 'active_image_url_here';
@@ -488,6 +491,7 @@ window.onload = async () => {
         // Clear the activity_id from URL parameters
         urlParams.delete('activity_id');
         history.replaceState({}, '', `${location.pathname}?${urlParams}`);
+        console.log('Replaced State');
 
         // Logic to update 'activeCoordinates' based on clicked 'guide.id'
         const newActiveCoordinates = coordinates.filter(
@@ -634,6 +638,7 @@ window.onload = async () => {
             urlParams.set('destination_id', destinationId);
             urlParams.delete('activity_id');
             history.replaceState({}, '', `${location.pathname}?${urlParams}`);
+            console.log('Replaced State');
           }
         }
       });
@@ -706,6 +711,10 @@ window.onload = async () => {
 
     // End Moovend code
 
+    function isTabletOrMobile() {
+      return window.innerWidth <= 1024;
+    }
+
     // Mapbox Control code
 
     map.addControl(new mapboxgl.NavigationControl());
@@ -722,7 +731,6 @@ window.onload = async () => {
       const markerHtml = document.createElement('div');
       markerHtml.style.backgroundImage = `url("${imageUrl}")`;
       //markerHtml.setAttribute("src", imageUrl);
-      markerHtml.style.zIndex = '100';
       markerHtml.setAttribute('original-image-url', imageUrl);
       markerHtml.setAttribute('active-image-url', imageUrlActive);
 
@@ -738,11 +746,12 @@ window.onload = async () => {
       markerHtml.style.border = '2px solid grey';
 
       const marker = new mapboxgl.Marker(markerHtml)
+
         .setLngLat([place.google_lng, place.google_lat])
         .addTo(map);
 
       const popupHTML = `
-        <div class="mini-card_component .is-popup">
+        <div class="mini-card_component is-popup" style="z-index: 100 !important;">
         <img src="${place.oa_place_image.url}" alt="" class="mini-card_image">
         <div class="mini-card_content">
         <div class="margin-bottom margin-xxsmall">
@@ -805,57 +814,132 @@ window.onload = async () => {
 
         // Update the URL without reloading the page
         history.replaceState(null, null, url.toString());
+        console.log('Replaced State');
 
         updateMarkerFromUrl();
       });
 
-      // Event listeners
-      markerHtml.addEventListener('mouseenter', () => {
-        markerHtml.style.cursor = 'pointer';
-        popupInstance.setLngLat(marker.getLngLat()).addTo(map);
-      });
-
-      markerHtml.addEventListener('mouseleave', () => {
-        markerHtml.style.cursor = 'default';
-        popupInstance.remove();
-      });
-
-      markerHtml.addEventListener('click', (e) => {
+      function handleMarkerTouchEnd(e) {
         e.stopPropagation();
         activeMarker = activity.id;
         selectedMarker = activity.place_id;
 
         urlParams.set('activity_id', activity.place_id);
         history.replaceState({}, '', `${location.pathname}?${urlParams}`);
+        console.log('Replaced State');
+
         console.log(`Marker clicked with activity ID: ${activity.place_id}`);
 
         showActivityModal(activity.place_id, dataStore);
+
         updateMarkerFromUrl();
         flyToAndSetActive(place);
         renderRelatedActivities(activityId, destinationId, dataStore);
-      });
+      }
+
+      if (isTabletOrMobile()) {
+        markerHtml.removeEventListener('touchend', handleMarkerTouchEnd);
+        markerHtml.addEventListener('touchend', handleMarkerTouchEnd);
+      } else {
+        markerHtml.addEventListener('mouseenter', () => {
+          const activityId = urlParams.get('activity_id');
+          markerHtml.style.cursor = 'pointer';
+
+          const markerActivityId = markerHtml.getAttribute('marker_activity_id');
+          // Controleer of de activity_id actief is
+          if (markerActivityId === activityId) {
+            markerHtml.style.zIndex = '0';
+          } else {
+            const activeElement = document.querySelector(`[marker_activity_id="${activityId}"]`);
+            if (activeElement) {
+              activeElement.style.zIndex = '0';
+            }
+            markerHtml.style.zIndex = '0';
+          }
+          popupInstance.setLngLat(marker.getLngLat()).addTo(map);
+        });
+
+        const activityId = urlParams.get('activity_id');
+
+        markerHtml.addEventListener('mouseleave', () => {
+          const activityId = urlParams.get('activity_id');
+          markerHtml.style.cursor = 'default';
+
+          const activeElement = document.querySelector(`[marker_activity_id="${activityId}"]`);
+          if (activeElement) {
+            activeElement.style.zIndex = '1';
+          }
+
+          // Haal de activity_id van de marker op uit het data-* attribuut
+          const markerActivityId = markerHtml.getAttribute('marker_activity_id');
+
+          // Controleer of de activity_id actief is
+          if (markerActivityId === activityId) {
+            markerHtml.style.zIndex = '1';
+          } else {
+            console.log('0', markerActivityId, activityId);
+            markerHtml.style.zIndex = '0';
+          }
+
+          popupInstance.remove();
+        });
+
+        markerHtml.addEventListener('click', (e) => {
+          e.stopPropagation();
+          activeMarker = activity.id;
+          selectedMarker = activity.place_id;
+
+          urlParams.set('activity_id', activity.place_id);
+          history.replaceState({}, '', `${location.pathname}?${urlParams}`);
+          console.log('Replaced State');
+
+          console.log(`Marker clicked with activity ID: ${activity.place_id}`);
+
+          updateMarkerFromUrl();
+          closeFlag = false;
+          showActivityModal(activity.place_id, dataStore);
+
+          flyToAndSetActive(place);
+          renderRelatedActivities(activityId, destinationId, dataStore);
+        });
+      }
 
       const closeButtons = document.querySelectorAll("[wized='activity_close_button']");
 
-      closeButtons.forEach(function (button) {
-        button.addEventListener('click', function (event) {
-          console.log('Close clicked');
-          document.querySelector('[wized=activity_info_modal]').style.display = 'none';
+      closeButtons.forEach((button, index) => {
+        // Check if the button already has an event listener
+        if (button.getAttribute('data-listener') !== 'true') {
+          // Attach the event listener
+          button.addEventListener('click', function (event) {
+            console.log(`Clicked button index: ${index}`);
+            console.log('Current closeFlag state:', closeFlag);
 
-          // Delete the 'activity_id' parameter from URLSearchParams object
-          urlParams.delete('activity_id');
+            if (!closeFlag) {
+              console.log('Inside closeFlag check');
 
-          // Create a new URL object from the current URL
-          const url = new URL(window.location.href);
+              document.querySelector('[wized=activity_info_modal]').style.display = 'none';
+              console.log('Modal closed');
 
-          // Update the search parameters of the URL
-          url.search = urlParams.toString();
+              urlParams.delete('activity_id');
+              console.log('Deleted activity_id');
 
-          // Update the URL without reloading the page
-          history.replaceState(null, null, url.toString());
+              const url = new URL(window.location.href);
+              url.search = urlParams.toString();
+              history.replaceState(null, null, url.toString());
+              console.log('Replaced State');
 
-          updateMarkerFromUrl();
-        });
+              closeFlag = true;
+              console.log('Updated closeFlag state:', closeFlag);
+
+              updateMarkerFromUrl();
+            } else {
+              console.log('Skipped due to closeFlag being true');
+            }
+          });
+
+          // Mark the button as having an event listener
+          button.setAttribute('data-listener', 'true');
+        }
       });
 
       return markerHtml;
