@@ -478,7 +478,7 @@ window.onload = async () => {
       const paragraphElement = document.createElement('p');
       paragraphElement.setAttribute('wized', 'destination_nav_name');
       paragraphElement.setAttribute('data-destination-id', guide.id);
-      paragraphElement.textContent = guide.place;
+      paragraphElement.textContent = guide._destination.short_name;
       paragraphElement.classList.add('map_tabs-link');
 
       anchorElement.appendChild(paragraphElement);
