@@ -967,6 +967,14 @@ window.onload = async () => {
           const place = destination._place;
           if (!place) return;
 
+          // Skip the place if it has invalid coordinates
+          if (place.google_lng === 0 || place.google_lat === 0) {
+            console.log(
+              `Skipping place with invalid coordinates: [${place.google_lng}, ${place.google_lat}]`
+            );
+            return;
+          }
+
           console.log(`Adding coordinates: [${place.google_lng}, ${place.google_lat}]`);
           coordinates.push([place.google_lng, place.google_lat]);
 
