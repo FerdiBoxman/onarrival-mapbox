@@ -15,8 +15,26 @@ if (typeof process !== 'undefined' && process.versions && process.versions.node)
 
 // Importing dotenv
 
+// Importing dotenv
+
 document.querySelector("[activity-data='image']").removeAttribute('srcset');
 document.querySelector("[activity-data='liked']").removeAttribute('srcset');
+
+function getDestinationIdFromActivityId(activityId, dataStore) {
+  console.log(dataStore);
+  // Loop through guide recommendations to find the matching activity
+  for (const guide of dataStore._guide_of_trips) {
+    for (const recommendation of guide._guide_recommendations) {
+      const place = recommendation._place;
+      if (place && place.id === activityId) {
+        // Return the destination ID related to this activity
+        return guide.id;
+      }
+    }
+  }
+  // If no matching destination is found, return null or some default value
+  return null;
+}
 
 let closeFlag = false;
 
@@ -54,7 +72,7 @@ function updateActivityUI(activity) {
   }
 }
 
-function findActivityByIdInDataStore2(dataStore, relatedActivityId) {
+function findActivityByIdInDataStore(dataStore, relatedActivityId) {
   for (const guide of dataStore._guide_of_trips) {
     for (const activity of guide._guide_recommendations) {
       if (String(activity.place_id) === relatedActivityId) {
@@ -67,13 +85,13 @@ function findActivityByIdInDataStore2(dataStore, relatedActivityId) {
 }
 
 async function renderRelatedActivities(activityId, destinationId, dataStore) {
-  console.log('destination id', destinationId);
+  console.log('destination id --------', destinationId);
   console.log('activityId', activityId);
   console.log('datastoreeeee', dataStore);
-  console.log('guide.id', dataStore._guide_of_trips[0].id);
+  console.log('guide id', dataStore._guide_of_trips);
   // Step 1: Find the destination in _guide_of_trips by its id
   const targetDestination = dataStore._guide_of_trips.find(
-    (guide) => String(guide.id) === destinationId
+    (guide) => String(guide.id) === String(destinationId)
   );
 
   console.log('Target dest', targetDestination);
@@ -82,9 +100,11 @@ async function renderRelatedActivities(activityId, destinationId, dataStore) {
   let relatedActivities = [];
   if (targetDestination && targetDestination._guide_recommendations) {
     relatedActivities = targetDestination._guide_recommendations.filter(
-      (activity) => activity._place.place_id !== activityId
+      (activity) => String(activity.place_id) !== String(activityId)
     );
   }
+
+  console.log('Target dest', targetDestination);
 
   console.log('Related Activities', relatedActivities);
 
@@ -162,21 +182,6 @@ async function renderRelatedActivities(activityId, destinationId, dataStore) {
 
     activityElement.appendChild(contentWrapper);
 
-    // Add click event to fly to the related activity destination
-    activityElement.addEventListener('click', function () {
-      const relatedActivityId = this.getAttribute('related-activity-id');
-
-      // Find the entire relatedActivity object
-      const relatedActivity = findActivityByIdInDataStore(dataStore, relatedActivityId);
-
-      if (relatedActivity) {
-        // Function to fly to the destination using the relatedActivity
-        flyToAndSetActive(relatedActivity.coords); // Assuming relatedActivity has a 'coords' field
-      } else {
-        console.warn(`Activity with ID ${relatedActivityId} not found.`);
-      }
-    });
-
     relatedActivitiesContainer.appendChild(activityElement);
   });
 }
@@ -208,7 +213,7 @@ function updateMarkerFromUrl() {
   }
 }
 
-async function showActivityModal(activityId, dataStore) {
+async function showActivityModal(activityId, dataStore, dataStoreRelatedActivities, destinationId) {
   const clickedGuide = dataStore._guide_of_trips.find((guide) =>
     guide._guide_recommendations.some(
       (activity) => activity.place_id.toString() === activityId.toString() // Fixed comparison
@@ -443,6 +448,8 @@ async function showActivityModal(activityId, dataStore) {
       );
     }
   }
+
+  renderRelatedActivities(activityId, destinationId, dataStoreRelatedActivities);
   document.querySelector('[wized=activity_info_modal]').style.display = 'block';
 }
 
@@ -460,6 +467,7 @@ window.onload = async () => {
     Wized.request.await('Load Trip Page');
 
     const dataStore = await Wized.data.get('r.18.d');
+    const dataStoreRelatedActivities = { ...dataStore };
     //setTimeout(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const destinationId = urlParams.get('destination_id');
@@ -469,11 +477,16 @@ window.onload = async () => {
     console.log('dataStore:', dataStore);
 
     dataStore._guide_of_trips.forEach((guide) => {
+      guide._guide_recommendations = guide._guide_recommendations.filter((destination) => {
+        const place = destination._place;
+        return place && place.google_lat !== 0 && place.google_lng !== 0;
+      });
       const anchorElement = document.createElement('a');
       anchorElement.setAttribute('wized', 'destination_nav_id');
       anchorElement.setAttribute('href', '#');
       anchorElement.setAttribute('data-destination-id', guide.id);
       anchorElement.classList.add('mab_tabs-wrapper', 'w-inline-block');
+      console.log(`Starting loop for guide ID: ${guide.id}`);
 
       const paragraphElement = document.createElement('p');
       paragraphElement.setAttribute('wized', 'destination_nav_name');
@@ -482,9 +495,10 @@ window.onload = async () => {
       paragraphElement.classList.add('map_tabs-link');
 
       anchorElement.appendChild(paragraphElement);
+      console.log(`Created anchor element with destination ID: ${guide.id}`);
       parentElement.appendChild(anchorElement);
 
-      renderRelatedActivities(activityId, destinationId, dataStore);
+      renderRelatedActivities(activityId, destinationId, dataStoreRelatedActivities); // Pass the new destinationId
 
       // Add click event
       anchorElement.addEventListener('click', function () {
@@ -499,7 +513,10 @@ window.onload = async () => {
         const newActiveCoordinates = coordinates.filter(
           (coord) => coord.destinationId === guide.id
         );
+        console.log(newActiveCoordinates, guide.id);
 
+        console.log('New active coordsss', newActiveCoordinates);
+        console.log('Current coordinates array:', JSON.stringify(coordinates));
         setMapBounds(newActiveCoordinates, map);
       });
     });
@@ -551,10 +568,11 @@ window.onload = async () => {
         element.classList.remove('is-active'); // Zo nee, verwijder de klasse (optioneel)
       }
     });
+    const destinationId2 = urlParams.get('destination_id');
 
     if (activityId) {
       // Automatically open the modal if activity_id is present in the URL parameters
-      showActivityModal(activityId, dataStore);
+      showActivityModal(activityId, dataStore, dataStoreRelatedActivities, destinationId2);
     }
 
     let startingPoint = [0, 0];
@@ -823,19 +841,30 @@ window.onload = async () => {
 
       function handleMarkerTouchEnd(e) {
         e.stopPropagation();
+
+        // Sla de huidige destination_id op
+        const dynamicDestinationId = getDestinationIdFromActivityId(activity.place_id, dataStore);
+
+        // Update alleen de activity_id in de URL
+        urlParams.set('activity_id', activity.place_id);
+        urlParams.set('destination_id', dynamicDestinationId);
+
+        // Zet de destination_id weer terug naar de oorspronkelijke waarde
+
+        history.pushState({}, '', `${location.pathname}?${urlParams}`);
+
+        // Update active and selected markers
         activeMarker = activity.id;
         selectedMarker = activity.place_id;
 
-        urlParams.set('activity_id', activity.place_id);
-        history.replaceState({}, '', `${location.pathname}?${urlParams}`);
-        console.log('Replaced State');
-
-        console.log(`Marker clicked with activity ID: ${activity.place_id}`);
-        closeFlag = false;
-        showActivityModal(activity.place_id, dataStore);
+        // Overige logica
         updateMarkerFromUrl();
+        closeFlag = false;
+
+        const destinationId4 = urlParams.get('destination_id');
+        showActivityModal(activity.place_id, dataStore, dataStoreRelatedActivities, destinationId4);
+
         flyToAndSetActive(place);
-        renderRelatedActivities(activityId, destinationId, dataStore);
       }
 
       if (isTabletOrMobile()) {
@@ -886,21 +915,35 @@ window.onload = async () => {
 
         markerHtml.addEventListener('click', (e) => {
           e.stopPropagation();
+
+          // Sla de huidige destination_id op
+          const dynamicDestinationId = getDestinationIdFromActivityId(activity.place_id, dataStore);
+
+          // Update alleen de activity_id in de URL
+          urlParams.set('activity_id', activity.place_id);
+          urlParams.set('destination_id', dynamicDestinationId);
+
+          // Zet de destination_id weer terug naar de oorspronkelijke waarde
+
+          history.pushState({}, '', `${location.pathname}?${urlParams}`);
+
+          // Update active and selected markers
           activeMarker = activity.id;
           selectedMarker = activity.place_id;
 
-          urlParams.set('activity_id', activity.place_id);
-          history.replaceState({}, '', `${location.pathname}?${urlParams}`);
-          console.log('Replaced State');
-
-          console.log(`Marker clicked with activity ID: ${activity.place_id}`);
-
+          // Overige logica
           updateMarkerFromUrl();
           closeFlag = false;
-          showActivityModal(activity.place_id, dataStore);
+
+          const destinationId4 = urlParams.get('destination_id');
+          showActivityModal(
+            activity.place_id,
+            dataStore,
+            dataStoreRelatedActivities,
+            destinationId4
+          );
 
           flyToAndSetActive(place);
-          renderRelatedActivities(activityId, destinationId, dataStore);
         });
       }
 
@@ -967,7 +1010,6 @@ window.onload = async () => {
           const place = destination._place;
           if (!place) return;
 
-          // Skip the place if it has invalid coordinates
           if (place.google_lng === 0 || place.google_lat === 0) {
             console.log(
               `Skipping place with invalid coordinates: [${place.google_lng}, ${place.google_lat}]`
@@ -977,6 +1019,7 @@ window.onload = async () => {
 
           console.log(`Adding coordinates: [${place.google_lng}, ${place.google_lat}]`);
           coordinates.push([place.google_lng, place.google_lat]);
+          console.log('Current coordinates array:', JSON.stringify(coordinates));
 
           if (guide.id.toString() === destination_id_param) {
             activeCoordinates.push([place.google_lng, place.google_lat]);
@@ -1031,3 +1074,5 @@ window.onload = async () => {
   });
   //  }, 2000); // Waits for 2 seconds
 };
+
+//
